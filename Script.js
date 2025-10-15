@@ -1,44 +1,74 @@
-body {
-  font-family: 'Cairo', sans-serif;
-  background-color: #f9f9f9;
-  margin: 0;
-  padding: 0;
-  direction: rtl;
+const firebaseConfig = {
+  apiKey: "AIzaSyAtJKG2p4mfbxYLqVZHcu7t_YOSx15ts14",
+  authDomain: "soshial-9932a.firebaseapp.com",
+  projectId: "soshial-9932a",
+  storageBucket: "soshial-9932a.appspot.com",
+  messagingSenderId: "678676776751",
+  appId: "1:678676776751:web:165b761716f6df2b3f03da",
+  measurementId: "G-4LL3LE15P9"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const userId = "Alpraa"; // ثابت مؤقتًا، يمكن ربطه بـ Firebase Auth لاحقًا
+document.getElementById("username").textContent = userId;
+
+async function loadUser() {
+  const userRef = db.collection("users").doc(userId);
+  const docSnap = await userRef.get();
+  if (docSnap.exists) {
+    const data = docSnap.data();
+    document.getElementById("coinCount").textContent = data.coins || 0;
+  } else {
+    await userRef.set({ coins: 0, name: userId });
+    document.getElementById("coinCount").textContent = 0;
+  }
+}
+loadUser();
+
+async function createPost() {
+  const content = document.getElementById("newPost").value.trim();
+  if (!content) return alert("اكتب شيئًا أولاً");
+  await db.collection("posts").add({
+    user: userId,
+    caption: content,
+    timestamp: Date.now()
+  });
+  alert("✅ تم نشر المنشور");
+  document.getElementById("newPost").value = "";
+  loadPosts();
 }
 
-header {
-  background-color: #00c3ff;
-  color: white;
-  text-align: center;
-  padding: 20px;
+async function loadPosts() {
+  const postList = document.getElementById("postList");
+  postList.innerHTML = "";
+  const snap = await db.collection("posts").orderBy("timestamp", "desc").get();
+  snap.forEach(doc => {
+    const data = doc.data();
+    const div = document.createElement("div");
+    div.textContent = `${data.user}: ${data.caption}`;
+    postList.appendChild(div);
+  });
+}
+loadPosts();
+
+async function startLive() {
+  await db.collection("live_streams").doc(userId).set({
+    streamer: userId,
+    viewers: 0,
+    startedAt: Date.now()
+  });
+  alert("📺 تم بدء البث المباشر");
 }
 
-main {
-  padding: 20px;
-}
-
-section {
-  background-color: white;
-  margin-bottom: 20px;
-  padding: 15px;
-  border-radius: 10px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-textarea {
-  width: 100%;
-  height: 80px;
-  margin-top: 10px;
-  padding: 10px;
-  font-size: 16px;
-}
-
-button {
-  margin-top: 10px;
-  padding: 10px;
-  background-color: #00c3ff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
+async function sendGift() {
+  await db.collection("gifts").add({
+    from: userId,
+    to: "targetUser",
+    name: "🌹 وردة",
+    price: 50,
+    timestamp: Date.now()
+  });
+  alert("🎁 تم إرسال الهدية");
 }
